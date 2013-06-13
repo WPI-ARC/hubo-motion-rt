@@ -90,6 +90,7 @@ void daemonize(const char *daemon_name, int priority)
     char pbuff[100];
     sprintf(gdaemon_name, "%s", daemon_name);
 //    sprintf(pbuff, "Starting daemonization for %s", daemon_name);
+    printf("demonize\n");
     syslog( LOG_NOTICE, "Starting daemonization for %s", daemon_name );
 
     // Initialize signal variables;
@@ -120,6 +121,7 @@ void daemonize(const char *daemon_name, int priority)
             syslog( LOG_ERR, "Unable to create lock file %s, code=%d (%s)"
                              "  Check if daemon already exists!",
                     lockfile, errno, strerror(errno) );
+            printf("fail 1\n");
             exit( EXIT_FAILURE );
         }
     }
@@ -157,6 +159,7 @@ void daemonize(const char *daemon_name, int priority)
     {
         syslog( LOG_ERR, "Unable to fork daemon, code=%d (%s)",
                 errno, strerror(errno) );
+        printf("fail 2\n");
         exit( EXIT_FAILURE );
     }
 
@@ -168,6 +171,7 @@ void daemonize(const char *daemon_name, int priority)
         alarm(2);
         pause();
 
+        printf("fail 3\n");
         exit( EXIT_FAILURE );
     }
 
@@ -195,6 +199,7 @@ void daemonize(const char *daemon_name, int priority)
         alarm(2);
         pause();
 
+        printf("fail\n");
         exit( EXIT_FAILURE );
     }
 
@@ -230,6 +235,8 @@ void daemonize(const char *daemon_name, int priority)
     {
         syslog( LOG_ERR, "Unable to change directory, code=%d (%s)",
                 errno, strerror(errno) );
+
+        printf("fail 4\n");
         exit( EXIT_FAILURE );
     }
 
@@ -257,6 +264,8 @@ void daemonize(const char *daemon_name, int priority)
     {
         syslog( LOG_ERR, "Unable to stream output, code=%d (%s)",
                 errno, strerror(errno) );
+
+        printf("fail 5\n");
         exit( EXIT_FAILURE );
     }
 
@@ -284,6 +293,7 @@ void daemonize(const char *daemon_name, int priority)
     if(mlockall(MCL_CURRENT|MCL_FUTURE) == -1)
     {
         fprintf(stderr, "mlockall Failed!\n");
+        printf("fail 6\n");
         exit( EXIT_FAILURE );
     }
 

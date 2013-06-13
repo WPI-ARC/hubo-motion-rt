@@ -49,6 +49,7 @@ Hubo_Control::Hubo_Control()
 Hubo_Control::Hubo_Control(const char *daemon_name, int priority)
 {
     controlInit();
+    //printf("daemonize\n");
     daemonize(daemon_name, priority);
 }
 
@@ -71,6 +72,8 @@ Hubo_Control::~Hubo_Control()
 
 void Hubo_Control::controlInit()
 {
+    printf("Allocate memory\n");
+
     kneeSingularityThreshold = 0.2;
     kneeSingularityDanger = 0.15;
     kneeSingularitySpeed = 0.1;
@@ -96,48 +99,76 @@ void Hubo_Control::controlInit()
     for(int i=0; i<8; i++)
         ctrlOn[i] = false;
 
-    int r = ach_open( &chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL );
-    assert( ACH_OK == r );
+    printf("Open channels\n");
+
+    ach_status_t r = ach_open( &chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL );
+//    assert( ACH_OK == r );
+    if( r != ACH_OK )
+        printf(" Error at line %d with : %s\n", __LINE__, ach_result_to_string(r) );
 
     r = ach_open( &chan_hubo_state, HUBO_CHAN_STATE_NAME, NULL );
-    assert( ACH_OK == r );
+//    assert( ACH_OK == r );
+    if( r != ACH_OK )
+        printf(" Error at line %dwith : %s\n", __LINE__, ach_result_to_string(r) );
 
     r = ach_open( &chan_hubo_board_cmd, HUBO_CHAN_BOARD_CMD_NAME, NULL );
-    assert( ACH_OK == r );
+//    assert( ACH_OK == r );
+    if( r != ACH_OK )
+        printf(" Error at line %d with : %s\n", __LINE__, ach_result_to_string(r) );
 
     r = ach_open( &chan_hubo_arm_ctrl_right, HUBO_CHAN_RA_CTRL_NAME, NULL );
     assert( ACH_OK == r );
+    if( r != ACH_OK )
+        printf(" Error at line %d with : %s\n", __LINE__, ach_result_to_string(r) );
 
     r = ach_open( &chan_hubo_arm_ctrl_left,  HUBO_CHAN_LA_CTRL_NAME, NULL );
-    assert( ACH_OK == r );
-    
+//    assert( ACH_OK == r );
+    if( r != ACH_OK )
+        printf(" Error at line %d with : %s\n", __LINE__, ach_result_to_string(r) );
+
     r = ach_open( &chan_hubo_leg_ctrl_right, HUBO_CHAN_RL_CTRL_NAME, NULL );
-    assert( ACH_OK == r );
+//    assert( ACH_OK == r );
+    if( r != ACH_OK )
+        printf(" Error at line %d with : %s\n", __LINE__, ach_result_to_string(r) );
 
     r = ach_open( &chan_hubo_leg_ctrl_left,  HUBO_CHAN_LL_CTRL_NAME, NULL );
-    assert( ACH_OK == r );
-    
+//    assert( ACH_OK == r );
+    if( r != ACH_OK )
+        printf(" Error at line %d with : %s\n", __LINE__, ach_result_to_string(r) );
+
     r = ach_open( &chan_hubo_fin_ctrl_right, HUBO_CHAN_RF_CTRL_NAME, NULL );
-    assert( ACH_OK == r );
-    
+//    assert( ACH_OK == r );
+    if( r != ACH_OK )
+        printf(" Error at line %d with : %s\n", __LINE__, ach_result_to_string(r) );
+
     r = ach_open( &chan_hubo_fin_ctrl_left,  HUBO_CHAN_LF_CTRL_NAME, NULL );
-    assert( ACH_OK == r );
-    
+//    assert( ACH_OK == r );
+    if( r != ACH_OK )
+        printf(" Error at line %d with : %s\n", __LINE__, ach_result_to_string(r) );
+
     r = ach_open( &chan_hubo_bod_ctrl, HUBO_CHAN_BOD_CTRL_NAME, NULL );
-    assert( ACH_OK == r );
-    
+//    assert( ACH_OK == r );
+    if( r != ACH_OK )
+        printf(" Error at line %d with : %s\n", __LINE__, ach_result_to_string(r) );
+
     r = ach_open( &chan_hubo_nck_ctrl, HUBO_CHAN_NCK_CTRL_NAME, NULL );
-    assert( ACH_OK == r );
-    
+//    assert( ACH_OK == r );
+    if( r != ACH_OK )
+        printf(" Error at line %d with : %s\n", __LINE__, ach_result_to_string(r) );
+
     r = ach_open( &chan_ctrl_state, CTRL_CHAN_STATE, NULL );
-    assert( ACH_OK == r );
+//    assert( ACH_OK == r );
+    if( r != ACH_OK )
+        printf(" Error at line %d with : %s\n", __LINE__, ach_result_to_string(r) );
 
     size_t fs;
     
-    
+    printf("Get ref and state\n");
 
-    ach_get( &chan_hubo_ref, &H_Ref, sizeof(H_Ref), &fs, NULL, ACH_O_WAIT );
-    ach_get( &chan_hubo_state, &H_State, sizeof(H_State), &fs, NULL, ACH_O_WAIT );
+//    ach_get( &chan_hubo_ref, &H_Ref, sizeof(H_Ref), &fs, NULL, ACH_O_WAIT );
+//    ach_get( &chan_hubo_state, &H_State, sizeof(H_State), &fs, NULL, ACH_O_WAIT );
+
+    printf("Start waiting for the channels\n");
 
     ach_status_t checkCtrl;
 
@@ -206,6 +237,8 @@ void Hubo_Control::controlInit()
     checkCtrl = ach_get( &chan_hubo_nck_ctrl, &H_Nck_Ctrl, sizeof(H_Nck_Ctrl),
                             &fs, &waitTime, ACH_O_LAST | ACH_O_WAIT );
     assert( ACH_TIMEOUT != checkCtrl );
+
+    printf("Fill Arrays\n");
 
     for(int i=0; i<HUBO_JOINT_COUNT; i++)
     {

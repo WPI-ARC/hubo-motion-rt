@@ -5,6 +5,7 @@ ach_channel_t traj_state_chan;
 
 int main( int argc, char **argv )
 {
+    printf("start trajectory daemon\n");
 
     Hubo_Control hubo("balance-daemon");
 
@@ -33,6 +34,8 @@ int main( int argc, char **argv )
 
     ach_open( &traj_chan, HUBO_TRAJ_CHAN, NULL );
     ach_open( &traj_state_chan, HUBO_TRAJ_STATE_CHAN, NULL );
+
+    printf("Channels are open\n");
     
     while( !daemon_sig_quit )
     {
@@ -46,17 +49,19 @@ int main( int argc, char **argv )
         output.status = TRAJ_RUNNING;
         ach_put( &traj_state_chan, &output, sizeof(output) );
 
+        printf("received trajectory (id : %d)\n", traj.trajID );
+
         hubo.update(true);
         double clock = 0, start = hubo.getTime();
         int i=0;
+        int sec=1;
+        
         while( clock <= traj.endTime )
         {
             hubo.update(true);
             clock = hubo.getTime() - start;
 
-            while( i<MAX_TRAJ_SIZE-1 && traj.time[i+1] <= clock
-                                     && traj.time[i+1] != 0 )
-                i++;
+            while( i<MAX_TRAJ_SIZE-1 && traj.time[i+1] <= clock && traj.time[i+1] != 0 ) i++;
 
             for( int j=0; j < HUBO_JOINT_COUNT; j++ )
             {
@@ -65,18 +70,22 @@ int main( int argc, char **argv )
                 hubo.setJointNominalAcceleration( j, traj.joint[j].acceleration[i] );
 
                 output.error[j] = traj.joint[j].position[i] - hubo.getJointAngleState(i);
+
+                //printf(" %f ", traj.joint[j].position[i] );
             }
+            //printf("\n");
 
             output.status = TRAJ_RUNNING;
             ach_put( &traj_state_chan, &output, sizeof(output) );
             
             hubo.sendControls();
 
+            //printf("clock : %f, traj.endTime : %f\n", clock, traj.endTime );
         }
         
+        printf("Trajectory completed, clock : %f, traj.endTime : %f\n", clock, traj.endTime );
         output.status = TRAJ_COMPLETE;
         ach_put( &traj_state_chan, &output, sizeof(output) );
-        
     }
 
 
