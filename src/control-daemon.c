@@ -296,7 +296,6 @@ void controlLoop()
         
         if( ctrl.active == 2 || H_state.refWait==1 )
         {
-            printf( "bypassing ref" );
             if(C_state.paused==0)
                 fprintf(stdout, "Pausing control\n");
             C_state.paused=1;
@@ -321,25 +320,15 @@ void controlLoop()
         else if(ctrl.active==1 && H_state.refWait==0)
             C_state.paused=0;
 
-        
 
         if( 0 < dt && dt < dtMax && H_state.refWait==0 )
         {
             iter++; if(iter>maxi) iter=0;
 
 
-            for( int j=0; j < HUBO_JOINT_COUNT; j++ )
-                {
-                    printf("%f ",  H_ref.ref[j] );
-                }
-            printf("\n");
-
             for(int jnt=0; jnt<HUBO_JOINT_COUNT; jnt++)
             {
                 err = H_ref.ref[jnt] - H_state.joint[jnt].pos;
-
-                if( ctrl.joint[jnt].mode != CTRL_POS )
-                        printf("joint is not controlled : %d\n",jnt );
 
                 if( ctrl.joint[jnt].mode == CTRL_PASS )
                 {
@@ -383,75 +372,44 @@ void controlLoop()
                                 H_ref.ref[jnt] += dr[jnt];
 
                         }
-                        else if(ctrl.joint[jnt].mode == CTRL_POS || jnt == 0)
+                        else if( ctrl.joint[jnt].mode == CTRL_POS )
                         {
-                               /*     
-                            //H_ref.ref[jnt] = ctrl.joint[jnt].position;
-                            //printf( "%f ", ctrl.joint[jnt].position );
 
                             if( ctrl.joint[jnt].position < ctrl.joint[jnt].pos_min )
-                            {
-                                printf( "joint %d out of bounds (min)\n", jnt );
                                 ctrl.joint[jnt].position = ctrl.joint[jnt].pos_min;
-                            }
                             else if( ctrl.joint[jnt].position > ctrl.joint[jnt].pos_max )
-                            {
-                                printf( "joint %d out of bounds (max)\n", jnt );
                                 ctrl.joint[jnt].position = ctrl.joint[jnt].pos_max;
-                            }
 
                             dr[jnt] = ctrl.joint[jnt].position - H_ref.ref[jnt]; // Check how far we are from desired position
-                            //printf( "** dr : %f ", dr[jnt] );
 
                             ctrl.joint[jnt].velocity = sign(dr[jnt])*fabs(ctrl.joint[jnt].speed); // Set velocity into the correct direction
 
-                            dV[jnt] = ctrl.joint[jnt].velocity - V0[jnt]; // Check how far we are from desired velocity
-                            //printf( ", dV : %f ", dV[jnt] );
 
-                            //printf( ", dA : %f ", ctrl.joint[jnt].acceleration*dr[jnt] );
+                            dV[jnt] = ctrl.joint[jnt].velocity - V0[jnt]; // Check how far we are from desired velocity
+
                             adr = sqrt(fabs(2.0*ctrl.joint[jnt].acceleration*dr[jnt]));
-                            if( fabs(V0[jnt]) >= adr )
-                            {         
-                                printf( "joint %d slow down before reaching goal\n", jnt );          
+                            if( fabs(V0[jnt]) >= adr ) // Slow down before reaching goal
                                 dV[jnt] = sign(dr[jnt])*adr-V0[jnt];
-                            } // Slow down before reaching goal
 
                             if( dV[jnt] > fabs(ctrl.joint[jnt].acceleration*dt) ) // Scale it down to be within bounds
-                            {
-                                printf( "joint %d scale down to be within acceleration +\n", jnt );
                                 dV[jnt] = fabs(ctrl.joint[jnt].acceleration*dt);
-                            }
-                            else if( dV[jnt] < -fabs(ctrl.joint[jnt].acceleration*dt) ) 
-                            {
-                                printf( "joint %d scale down to be within acceleration -\n", jnt );
+                            else if( dV[jnt] < -fabs(ctrl.joint[jnt].acceleration*dt) ) // Make sure the sign is correct
                                 dV[jnt] = -fabs(ctrl.joint[jnt].acceleration*dt);
-                             }
 
                             V[jnt] = V0[jnt] + dV[jnt]; // Step velocity forward
 
-                            //printf( ", V : %f ", V[jnt] );
-
-                            if( fabs(dr[jnt]) > fabs(V[jnt]*dt) && V[jnt]*dr[jnt] >= 0 ) // Make sure the sign is correct
-                            {
-                                //printf( "joint %d scale down to be within bounds -\n" );
+                            if( fabs(dr[jnt]) > fabs(V[jnt]*dt) && V[jnt]*dr[jnt] >= 0 )
                                 dr[jnt] = V[jnt]*dt;
-                            }
                             else if( fabs(dr[jnt]) > fabs(V[jnt]*dt) && V[jnt]*dr[jnt] < 0 )
-                            {
-                                //printf( "joint %d scale down to be within bounds -\n" );
                                 dr[jnt] = -V[jnt]*dt;
-                            }
-                            */
-    /*
-                            if( H_ref.ref[jnt]+dr[jnt] < ctrl.joint[jnt].pos_min )
+
+/*                            if( H_ref.ref[jnt]+dr[jnt] < ctrl.joint[jnt].pos_min )
                                 H_ref.ref[jnt] = ctrl.joint[jnt].pos_min;
                             else if( H_ref.ref[jnt]+dr[jnt] > ctrl.joint[jnt].pos_max )
                                 H_ref.ref[jnt] = ctrl.joint[jnt].pos_max;
                             else
                                 H_ref.ref[jnt] += dr[jnt];*/
-                            //H_ref.ref[jnt] += dr[jnt];
-                            H_ref.ref[jnt] = ctrl.joint[jnt].position;
-                            //printf( "%f ", dr[jnt] );
+                            H_ref.ref[jnt] += dr[jnt];
                         }
                         else if( ctrl.joint[jnt].mode == CTRL_HOME )
                         {
@@ -498,39 +456,26 @@ void controlLoop()
 
             } // end: for loop
 
-            //printf("\n");
-            
+
             if(ctrl.active == 1 && C_state.paused==0) 
             {
-                printf("\nshould put on the ref channel\n");
-                for( int j=0; j < HUBO_JOINT_COUNT; j++ )
-                {
-                    printf("%f ",  H_ref.ref[j] );
-                }
-                printf("\n");
                 presult = ach_put( &chan_hubo_ref, &H_ref, sizeof(H_ref) );
                 if(presult != ACH_OK)
                     fprintf(stderr, "Error sending ref command! (%d) %s\n",
                         presult, ach_result_to_string(presult));
             }
-
-            fflush(stdout);
-            fflush(stderr);
             
         }// end: time test
         else if( dt >= 0.1 )
             fprintf(stderr, "Experiencing Delay of %f seconds\n", dt);
         else if( dt < 0 )
             fprintf(stderr, "Congratulations! You have traveled backwards"
-                            " through time by %f seconds!\n", -dt);
-
-        //fprintf(stderr, "End the control loop!!! JIM\n" );
+                            " through time by %f seconds!", -dt);
 
         fflush(stdout);
         fflush(stderr);
     } // End of Main Control Loop
 
-    fprintf(stdout, "Quit daemon\n"); fflush(stdout);
 }
 
 
@@ -541,7 +486,8 @@ int main(int argc, char **argv)
 {
     // TODO: Parse runtime arguments
 
-    //daemonize( "control-daemon", 49 );
+
+    daemonize( "control-daemon", 49 );
    
     int r = ach_open(&chan_hubo_ref, HUBO_CHAN_REF_NAME, NULL);
     daemon_assert( ACH_OK == r, __LINE__ );
